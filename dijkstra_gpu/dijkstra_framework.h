@@ -17,6 +17,8 @@ class dijkstra_framework
 {
 private:
     std::unique_ptr<graph_data> m_graph;
+    int m_source;
+    int m_destination;
 
     int *d_vertices;
     int *d_edges;
@@ -29,6 +31,7 @@ private:
 public:
     void generate_random_graph(int in_vertex_count, int in_neighbour_count);
     void set_graph(std::unique_ptr<graph_data> in_graph) { m_graph = std::move(in_graph); }
+    void set_source(int in_source) { m_source = in_source; }
     void run_gpu();
     void run_cpu();
 
@@ -37,7 +40,7 @@ private:
     void deallocate_gpu_buffers();
 };
 
-__global__ void gpu_init_buffers(unsigned char *mask, float *cost, float *updating_cost, int size)
+__global__ void gpu_init_buffers(size_t source, unsigned char *mask, float *cost, float *updating_cost, int size)
 {
     unsigned int tid = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -46,6 +49,36 @@ __global__ void gpu_init_buffers(unsigned char *mask, float *cost, float *updati
         mask[tid] = 0;
         cost[tid] = FLT_MAX;
         updating_cost[tid] = FLT_MAX;
+    }
+
+    if (tid == source)
+    {
+        mask[tid] = 1;
+        cost[tid] = 0;
+        updating_cost[tid] = 0;
+    }
+}
+
+__global__ void gpu_shortest_path(
+    int *vertices,
+    int *edges,
+    float *weights,
+    unsigned char *mask,
+    float *costs,
+    float *updating_costs,
+    int vertex_count,
+    int edge_count)
+{
+    unsigned int tid = threadIdx.x + blockIdx.x * blockDim.x;
+    
+    int edges_end;
+    
+    if (tid + 1 < vertex_count) edges_end = vertices[tid + 1];
+    else edges_end = edge_count;
+
+    if (mask[tid] == true)
+    {
+
     }
 }
 
@@ -97,12 +130,13 @@ void dijkstra_framework::run_gpu()
     std::cout << "num_blocks: " << num_blocks << " num_threads: " << num_threads << std::endl;
 
     allocate_gpu_buffers();
-    gpu_init_buffers<<<num_blocks, num_threads>>>(d_mask, d_cost, d_updating_cost, m_graph->vertices.size());
+    gpu_init_buffers<<<num_blocks, num_threads>>>(m_source, d_mask, d_cost, d_updating_cost, m_graph->vertices.size());
 
     unsigned char *mask = new unsigned char[m_graph->vertices.size()];
 
-    while (is_mask_empty(mask, m_graph->vertices.size()))
+    //while (is_mask_empty(mask, m_graph->vertices.size()))
     {
+
         // Do CUDA things.
     }
 

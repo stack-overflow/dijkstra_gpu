@@ -8,8 +8,9 @@ int main()
     {
         // ------------------
         dijkstra_framework dijkstra;
-        dijkstra.generate_random_graph(1029, 32);
+        dijkstra.generate_random_graph(1024, 32);
 
+        dijkstra.set_source(0);
         dijkstra.run_gpu();
     }
     catch(std::exception e)
