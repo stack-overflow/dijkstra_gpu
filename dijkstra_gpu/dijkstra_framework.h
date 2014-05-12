@@ -76,10 +76,38 @@ __global__ void gpu_shortest_path(
     if (tid + 1 < vertex_count) edges_end = vertices[tid + 1];
     else edges_end = edge_count;
 
-    if (mask[tid] == true)
+    if (mask[tid] == 1)
     {
-
+        mask[tid] = 0;
+        for (int i = vertices[tid]; i < edges_end; ++i)
+        {
+            if (updating_costs[i] > costs[tid] + weights[i])
+            {
+                updating_costs[i] = costs[tid] + weights[i];
+            }
+        }
     }
+}
+
+__global__ void gpu_shortest_path2(
+    int *vertices,
+    int *edges,
+    float *weights,
+    unsigned char *mask,
+    float *costs,
+    float *updating_costs,
+    int vertex_count,
+    int edge_count)
+{
+    unsigned int tid = threadIdx.x + blockIdx.x * blockDim.x;
+
+    if (costs[tid] > updating_costs[tid])
+    {
+        costs[tid] = updating_costs[tid];
+        mask[tid] = 1;
+    }
+
+    updating_costs[tid] = costs[tid];
 }
 
 void dijkstra_framework::allocate_gpu_buffers()
@@ -134,13 +162,26 @@ void dijkstra_framework::run_gpu()
 
     unsigned char *mask = new unsigned char[m_graph->vertices.size()];
 
-    //while (is_mask_empty(mask, m_graph->vertices.size()))
-    {
+    gpu::memcpy_gpu_to_cpu(mask, d_mask, m_graph->vertices.size() * sizeof(unsigned char));
 
-        // Do CUDA things.
+    while (!is_mask_empty(mask, m_graph->vertices.size()))
+    {
+        gpu_shortest_path<<<num_blocks, num_threads>>>(d_vertices, d_edges, d_weights, d_mask, d_cost, d_updating_cost, m_graph->vertices.size(), m_graph->edges.size());
+        gpu_shortest_path2<<<num_blocks, num_threads>>>(d_vertices, d_edges, d_weights, d_mask, d_cost, d_updating_cost, m_graph->vertices.size(), m_graph->edges.size());
+        gpu::memcpy_gpu_to_cpu(mask, d_mask, m_graph->vertices.size() * sizeof(unsigned char));
     }
 
     delete [] mask;
+
+    float *result = new float[m_graph->vertices.size()];
+    gpu::memcpy_gpu_to_cpu(result, d_cost, sizeof(float) * m_graph->vertices.size());
+
+    for (int i = 0; i < m_graph->vertices.size(); ++i)
+    {
+        std::cout << result[i] << std::endl;
+    }
+
+    delete [] result;
 
     deallocate_gpu_buffers();
 }
@@ -162,7 +203,7 @@ void dijkstra_framework::generate_random_graph(int in_vertex_count, int in_neigh
     std::uniform_int_distribution<int> distribution_int(0, m_graph->vertices.size());
     auto random_int = std::bind(distribution_int, generator);
 
-    std::uniform_real_distribution<float> distribution_float(0, 1.0f);
+    std::uniform_real_distribution<float> distribution_float(0, 10.0f);
     auto random_float = std::bind(distribution_float, generator);
 
     for (size_t i = 0; i < m_graph->vertices.size(); ++i)
@@ -173,6 +214,6 @@ void dijkstra_framework::generate_random_graph(int in_vertex_count, int in_neigh
     for (size_t i = 0; i < m_graph->edges.size(); ++i)
     {
         m_graph->edges[i] = random_int(); // 1 .. vertex_count
-        m_graph->weights[i] = random_float(); // 0 .. 1.0f
+        m_graph->weights[i] = random_float(); // 0 .. 10.0f
     }
 }

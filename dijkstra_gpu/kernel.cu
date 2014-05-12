@@ -2,14 +2,19 @@
 
 #include "dijkstra_framework.h"
 
+#define SAMPLE_DATA
+
 int main()
 {
     try
     {
         // ------------------
         dijkstra_framework dijkstra;
+#ifndef SAMPLE_DATA
         dijkstra.generate_random_graph(1024, 32);
-
+#else
+        
+#endif
         dijkstra.set_source(0);
         dijkstra.run_gpu();
     }
