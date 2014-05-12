@@ -33,4 +33,10 @@ public:
     {
         if (cudaMemcpy(dst, src, size, cudaMemcpyDeviceToHost) != cudaSuccess) throw std::runtime_error("memcpy gpu to cpu failed");
     }
+
+    static size_t get_overall_num_threads(int threads_per_block, int num_elements_to_process)
+    {
+        int rest = num_elements_to_process % threads_per_block;
+        return (rest == 0) ? (num_elements_to_process) : (num_elements_to_process + threads_per_block - rest);
+    }
 };

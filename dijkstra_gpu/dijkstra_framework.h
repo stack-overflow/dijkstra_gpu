@@ -18,9 +18,13 @@ class dijkstra_framework
 private:
     std::unique_ptr<graph_data> m_graph;
 
-    int *h_vertices;
-    int *h_edges;
-    float *h_weights;
+    int *d_vertices;
+    int *d_edges;
+    float *d_weights;
+
+    unsigned char *d_mask;
+    float *d_cost;
+    float *d_updating_cost;
 
 public:
     void generate_random_graph(int in_vertex_count, int in_neighbour_count);
@@ -33,6 +37,18 @@ private:
     void deallocate_gpu_buffers();
 };
 
+__global__ void gpu_init_buffers(unsigned char *mask, float *cost, float *updating_cost, int size)
+{
+    unsigned int tid = threadIdx.x + blockIdx.x * blockDim.x;
+
+    if (tid < size)
+    {
+        mask[tid] = 0;
+        cost[tid] = FLT_MAX;
+        updating_cost[tid] = FLT_MAX;
+    }
+}
+
 void dijkstra_framework::allocate_gpu_buffers()
 {
     if (m_graph == nullptr)
@@ -40,25 +56,57 @@ void dijkstra_framework::allocate_gpu_buffers()
         throw std::logic_error("No graph.");
     }
 
-    gpu::malloc(reinterpret_cast<void **>(&h_vertices), m_graph->vertices.size());
-    gpu::malloc(reinterpret_cast<void **>(&h_edges), m_graph->edges.size());
-    gpu::malloc(reinterpret_cast<void **>(&h_weights), m_graph->weights.size());
+    gpu::malloc(reinterpret_cast<void **>(&d_vertices), sizeof(int) * m_graph->vertices.size());
+    gpu::malloc(reinterpret_cast<void **>(&d_edges), sizeof(int) * m_graph->edges.size());
+    gpu::malloc(reinterpret_cast<void **>(&d_weights), sizeof(float) * m_graph->weights.size());
+    gpu::malloc(reinterpret_cast<void **>(&d_mask), sizeof(unsigned char) * m_graph->vertices.size());
+    gpu::malloc(reinterpret_cast<void **>(&d_cost), sizeof(float) * m_graph->vertices.size());
+    gpu::malloc(reinterpret_cast<void **>(&d_updating_cost), sizeof(float) * m_graph->vertices.size());
 
-    gpu::memcpy_cpu_to_gpu(h_vertices, m_graph->vertices.data(), m_graph->vertices.size());
-    gpu::memcpy_cpu_to_gpu(h_edges, m_graph->edges.data(), m_graph->edges.size());
-    gpu::memcpy_cpu_to_gpu(h_weights, m_graph->weights.data(), m_graph->weights.size());
+    gpu::memcpy_cpu_to_gpu(d_vertices, m_graph->vertices.data(), m_graph->vertices.size());
+    gpu::memcpy_cpu_to_gpu(d_edges, m_graph->edges.data(), m_graph->edges.size());
+    gpu::memcpy_cpu_to_gpu(d_weights, m_graph->weights.data(), m_graph->weights.size());
 }
 
 void dijkstra_framework::deallocate_gpu_buffers()
 {
-    gpu::free(h_weights);
-    gpu::free(h_edges);
-    gpu::free(h_vertices);
+    gpu::free(d_updating_cost);
+    gpu::free(d_cost);
+    gpu::free(d_mask);
+    gpu::free(d_weights);
+    gpu::free(d_edges);
+    gpu::free(d_vertices);
+}
+
+bool is_mask_empty(unsigned char *mask, int size)
+{
+    for (int i = 0; i < size; ++i)
+    {
+        if (mask[i] == 1) return false;
+    }
+
+    return true;
 }
 
 void dijkstra_framework::run_gpu()
 {
+    int num_threads         = 128;
+    int overall_threads_num = gpu::get_overall_num_threads(num_threads, m_graph->vertices.size());
+    int num_blocks          = overall_threads_num / num_threads;
+
+    std::cout << "num_blocks: " << num_blocks << " num_threads: " << num_threads << std::endl;
+
     allocate_gpu_buffers();
+    gpu_init_buffers<<<num_blocks, num_threads>>>(d_mask, d_cost, d_updating_cost, m_graph->vertices.size());
+
+    unsigned char *mask = new unsigned char[m_graph->vertices.size()];
+
+    while (is_mask_empty(mask, m_graph->vertices.size()))
+    {
+        // Do CUDA things.
+    }
+
+    delete [] mask;
 
     deallocate_gpu_buffers();
 }

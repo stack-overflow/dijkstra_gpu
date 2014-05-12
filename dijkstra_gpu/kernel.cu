@@ -8,7 +8,7 @@ int main()
     {
         // ------------------
         dijkstra_framework dijkstra;
-        dijkstra.generate_random_graph(1024, 32);
+        dijkstra.generate_random_graph(1029, 32);
 
         dijkstra.run_gpu();
     }
