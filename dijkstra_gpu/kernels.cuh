@@ -59,7 +59,7 @@ __global__ void gpu_shortest_path2(
     int *mask,
     float *costs,
     float *updating_costs,
-    int *any_changes,
+    unsigned int *any_changes,
     int vertex_count)
 {
     unsigned int tid = threadIdx.x + (blockIdx.x * blockDim.x);
@@ -71,6 +71,7 @@ __global__ void gpu_shortest_path2(
             costs[tid] = updating_costs[tid];
             mask[tid] = 1;
             any_changes[0]++;
+            //atomicInc(&any_changes[0], 1);
         }
 
         updating_costs[tid] = costs[tid];

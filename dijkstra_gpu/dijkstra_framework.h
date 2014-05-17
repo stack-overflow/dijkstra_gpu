@@ -34,7 +34,7 @@ private:
     float *d_cost;
     float *d_updating_cost;
 
-    int   *d_any_changes;
+    unsigned int *d_any_changes;
 
 public:
     dijkstra_framework();
@@ -110,17 +110,17 @@ void dijkstra_framework::run_gpu()
     allocate_gpu_buffers();
     gpu_init_buffers<<<num_blocks, num_threads>>>(m_source, d_mask, d_cost, d_updating_cost, m_graph->vertices.size());
 
-    int any_changes = 1;
+    unsigned int any_changes = 1;
     int cnt         = 0;
 
     std::cout << "main loop" << std::endl;
     
     while (any_changes)
     {
-        gpu::memset(d_any_changes, 0, sizeof(int));
+        gpu::memset(d_any_changes, 0, sizeof(unsigned int));
         gpu_shortest_path<<< num_blocks, num_threads >>>(d_vertices, d_edges, d_weights, d_mask, d_cost, d_updating_cost, m_graph->vertices.size(), m_graph->edges.size());
         gpu_shortest_path2<<< num_blocks, num_threads >>>(d_mask, d_cost, d_updating_cost, d_any_changes, m_graph->vertices.size());
-        gpu::memcpy_gpu_to_cpu(&any_changes, d_any_changes, sizeof(int));
+        gpu::memcpy_gpu_to_cpu(&any_changes, d_any_changes, sizeof(unsigned int));
 
         ++cnt;
     }
