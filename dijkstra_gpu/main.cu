@@ -11,12 +11,18 @@ int main()
         // ------------------
         dijkstra_framework dijkstra;
 #ifndef SAMPLE_DATA
-        dijkstra.generate_random_graph(1024, 32);
+        dijkstra.create_random_graph(32, 16);
 #else
-        
+        dijkstra.create_sample_graph();
 #endif
         dijkstra.set_source(0);
         dijkstra.run_gpu();
+
+        float *result = dijkstra.get_result();
+        for (int i = 0; i < 7; ++i)
+        {
+            std::cout << result[i] << std::endl;
+        }
     }
     catch(std::exception e)
     {

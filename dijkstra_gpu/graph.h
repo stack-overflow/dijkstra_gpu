@@ -12,4 +12,5 @@ struct graph_data
         edges(in_edge_count),
         weights(in_edge_count)
     {}
+
 };

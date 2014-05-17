@@ -27,18 +27,38 @@ public:
         if (result != cudaSuccess) throw std::runtime_error("gpu synchronize failed, error " + std::to_string(result));
     }
 
-    template<typename T>
-    static void memcpy_cpu_to_gpu(T *dst, T *src, size_t size)
+    //template<typename T>
+    static void memcpy_cpu_to_gpu(void *d_dst, void *h_src, size_t size)
     {
-        cudaError_t result = cudaMemcpy(dst, src, size, cudaMemcpyHostToDevice);
+        cudaError_t result = cudaMemcpy(d_dst, h_src, size, cudaMemcpyHostToDevice);
         if (result != cudaSuccess) throw std::runtime_error("memcpy cpu to gpu failed, error " + std::to_string(result));
     }
 
-    template<typename T>
-    static void memcpy_gpu_to_cpu(T *dst, T *src, size_t size)
+    //template<typename T>
+    static void memcpy_gpu_to_cpu(void *h_dst, void *d_src, size_t size)
     {
-        cudaError_t result = cudaMemcpy(dst, src, size, cudaMemcpyDeviceToHost);
+        cudaError_t result = cudaMemcpy(h_dst, d_src, size, cudaMemcpyDeviceToHost);
         if (result != cudaSuccess) throw std::runtime_error("memcpy gpu to cpu failed, error " + std::to_string(result));
+    }
+
+    static void memset(void *d_dst, int value, size_t size)
+    {
+        cudaError_t result = cudaMemset(d_dst, value, size);
+        if (result != cudaSuccess) throw std::runtime_error("gpu memset failed, error " + std::to_string(result));
+    }
+
+    static void *malloc_cpu(size_t size)
+    {
+        void *h_ptr;
+        cudaError_t result = cudaMallocHost(&h_ptr, size);
+        if (result != cudaSuccess) throw std::runtime_error("cudaMallocHost failed, error " + std::to_string(result));
+        return h_ptr;
+    }
+
+    static void free_cpu(void *host_ptr)
+    {
+        cudaError_t result = cudaFreeHost(host_ptr);
+        if (result != cudaSuccess) throw std::runtime_error("cudaFreeHost failed, error " + std::to_string(result));
     }
 
     static size_t get_overall_num_threads(int threads_per_block, int num_elements_to_process)
