@@ -13,4 +13,11 @@ struct graph_data
         weights(in_edge_count)
     {}
 
+    void clear()
+    {
+        vertices.clear();
+        edges.clear();
+        weights.clear();
+    }
+
 };
