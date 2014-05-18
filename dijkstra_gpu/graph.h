@@ -19,5 +19,4 @@ struct graph_data
         edges.clear();
         weights.clear();
     }
-
 };

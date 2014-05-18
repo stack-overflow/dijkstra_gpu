@@ -71,6 +71,8 @@ private:
     void dispose_gpu_buffers();
     void prepare_cpu_buffers();
     void dispose_cpu_buffers();
+
+    dijkstra_framework(const dijkstra_framework&);
 };
 
 dijkstra_framework::dijkstra_framework() :

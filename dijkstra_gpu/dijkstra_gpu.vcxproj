@@ -172,6 +172,7 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
     <ClInclude Include="graph.h" />
     <ClInclude Include="kernels.cuh" />
     <ClInclude Include="sample_data.h" />
+    <ClInclude Include="timekeeper.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

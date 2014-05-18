@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include "dijkstra_framework.h"
+#include "timekeeper.h"
 
 //#define SAMPLE_DATA
 
@@ -9,6 +10,8 @@ int main()
     try
     {
         // ------------------
+        timekeeper timer;
+
         dijkstra_framework dijkstra;
 #ifndef SAMPLE_DATA
         dijkstra.create_random_graph(10000000, 4);
@@ -18,13 +21,14 @@ int main()
         dijkstra.set_source(1024);
 
         // ---- GPU ----
-
+        std::cout << "GPU will prepare now." << std::endl;
         dijkstra.prepare_gpu();
+        std::cout << "GPU prepared." << std::endl;
 
-        auto gpu_start = std::chrono::steady_clock::now();
-        dijkstra.run_gpu();
-        auto gpu_end = std::chrono::steady_clock::now();
-        auto gpu_time = std::chrono::duration<long double, std::milli>(gpu_end - gpu_start).count();
+        auto gpu_time = timer.measure_time([&] {
+            dijkstra.run_gpu();
+        });
+
         std::cout << "GPU version took: " << gpu_time << " ms" << std::endl;
 
         float *result = dijkstra.get_result_gpu();
@@ -35,17 +39,15 @@ int main()
         
         dijkstra.cleanup_gpu();
 
-        gpu::device_synchronize();
-
         // ---- CPU ----
 
         std::cout << "CPU will prepare now." << std::endl;
         dijkstra.prepare_cpu();
         std::cout << "CPU prepared." << std::endl;
-        auto cpu_start = std::chrono::steady_clock::now();
-        dijkstra.run_cpu();
-        auto cpu_end = std::chrono::steady_clock::now();
-        auto cpu_time = std::chrono::duration<long double, std::milli>(cpu_end - cpu_start).count();
+
+        auto cpu_time = timer.measure_time([&]() {
+            dijkstra.run_cpu();
+        });
 
         std::cout << "CPU version took: " << cpu_time << " ms" << std::endl;
 
