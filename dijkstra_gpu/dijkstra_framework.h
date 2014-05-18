@@ -23,7 +23,6 @@ private:
     std::unique_ptr<graph_data> m_graph;
     int   m_source;
     int   m_destination;
-    bool  m_computed;
     float *m_result;
 
     int   *d_vertices;
@@ -51,16 +50,8 @@ public:
     void prepare_cpu() { prepare_cpu_buffers(); }
     void cleanup_cpu() { dispose_cpu_buffers(); }
 
-    void prepare_gpu()
-    {
-        prepare_gpu_buffers();
-    
-        int num_threads         = 512;
-        int overall_threads_num = gpu::get_overall_num_threads(num_threads, m_graph->vertices.size());
-        int num_blocks          = overall_threads_num / num_threads;
+    void prepare_gpu();
 
-        gpu_init_buffers<<<num_blocks, num_threads>>>(m_source, d_mask, d_cost, d_updating_cost, m_graph->vertices.size());
-    }
     void cleanup_gpu() { dispose_gpu_buffers(); }
 
     void run_gpu();
@@ -76,13 +67,23 @@ private:
 };
 
 dijkstra_framework::dijkstra_framework() :
-    m_source(0),
-    m_computed(false)
+    m_source(0)
 {
 }
 
 dijkstra_framework::~dijkstra_framework()
 {
+}
+
+void dijkstra_framework::prepare_gpu()
+{
+    prepare_gpu_buffers();
+
+    int num_threads         = 512;
+    int overall_threads_num = gpu::get_overall_num_threads(num_threads, m_graph->vertices.size());
+    int num_blocks          = overall_threads_num / num_threads;
+
+    gpu_init_buffers<<<num_blocks, num_threads>>>(m_source, d_mask, d_cost, d_updating_cost, m_graph->vertices.size());
 }
 
 void dijkstra_framework::prepare_gpu_buffers()
