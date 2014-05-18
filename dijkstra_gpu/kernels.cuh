@@ -61,6 +61,7 @@ __global__ void gpu_shortest_path(
                 {
                     updating_costs[nid] = costs[tid] + weights[i];
                     updating_pred[nid] = tid;
+                    mask[tid] = 1;
                 }
             }
         }

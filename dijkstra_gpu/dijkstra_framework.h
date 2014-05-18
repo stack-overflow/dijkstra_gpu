@@ -204,8 +204,8 @@ void dijkstra_framework::run_cpu()
         if (top_cost <= m_result[top_node])
         {
             for (int i = m_graph->vertices[top_node];
-                i < neigh_end;
-                ++i)
+                     i < neigh_end;
+                     ++i)
             {
                 int nid = m_graph->edges[i];
                 float edge_cost = m_graph->weights[i];

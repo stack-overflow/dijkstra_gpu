@@ -12,7 +12,7 @@ int main()
         timekeeper timer;
 
         dijkstra_framework dijkstra;
-        dijkstra.create_random_graph(100000, 4);
+        dijkstra.create_random_graph(10000000, 14);
         //dijkstra.create_sample_graph();
 
         runtime_info gpu_times;
