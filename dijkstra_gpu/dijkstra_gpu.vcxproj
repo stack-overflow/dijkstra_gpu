@@ -171,6 +171,7 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
     <ClInclude Include="gpu.h" />
     <ClInclude Include="graph.h" />
     <ClInclude Include="kernels.cuh" />
+    <ClInclude Include="runtime_info.h" />
     <ClInclude Include="sample_data.h" />
     <ClInclude Include="timekeeper.h" />
   </ItemGroup>

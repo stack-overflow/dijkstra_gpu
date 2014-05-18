@@ -24,6 +24,7 @@ private:
     int   m_source;
     int   m_destination;
     float *m_result;
+    int   *m_path;
 
     int   *d_vertices;
     int   *d_edges;
@@ -32,6 +33,8 @@ private:
     int   *d_mask;
     float *d_cost;
     float *d_updating_cost;
+    int   *d_pred;
+    int   *d_updating_pred;
 
     unsigned int *d_any_changes;
 
@@ -44,8 +47,12 @@ public:
     void set_graph(std::unique_ptr<graph_data> in_graph) { m_graph = std::move(in_graph); }
     void set_source(int in_source) { m_source = in_source; }
     void clear_graph() { m_graph->clear(); }
+
     float *get_result_gpu();
     float *get_result_cpu();
+
+    int *get_result_path_gpu();
+    int *get_result_path_cpu();
 
     void prepare_cpu() { prepare_cpu_buffers(); }
     void cleanup_cpu() { dispose_cpu_buffers(); }
@@ -83,7 +90,7 @@ void dijkstra_framework::prepare_gpu()
     int overall_threads_num = gpu::get_overall_num_threads(num_threads, m_graph->vertices.size());
     int num_blocks          = overall_threads_num / num_threads;
 
-    gpu_init_buffers<<<num_blocks, num_threads>>>(m_source, d_mask, d_cost, d_updating_cost, m_graph->vertices.size());
+    gpu_init_buffers<<<num_blocks, num_threads>>>(m_source, d_mask, d_cost, d_updating_cost, d_pred, d_updating_pred, m_graph->vertices.size());
 }
 
 void dijkstra_framework::prepare_gpu_buffers()
@@ -99,6 +106,8 @@ void dijkstra_framework::prepare_gpu_buffers()
     gpu::malloc(reinterpret_cast<void **>(&d_mask), sizeof(int) * m_graph->vertices.size());
     gpu::malloc(reinterpret_cast<void **>(&d_cost), sizeof(float) * m_graph->vertices.size());
     gpu::malloc(reinterpret_cast<void **>(&d_updating_cost), sizeof(float) * m_graph->vertices.size());
+    gpu::malloc(reinterpret_cast<void **>(&d_pred), sizeof(int) * m_graph->vertices.size());
+    gpu::malloc(reinterpret_cast<void **>(&d_updating_pred), sizeof(int) * m_graph->vertices.size());
     gpu::malloc(reinterpret_cast<void **>(&d_any_changes), sizeof(int) * 1);
 
     gpu::memcpy_cpu_to_gpu(d_vertices, &m_graph->vertices[0], sizeof(int) * m_graph->vertices.size());
@@ -108,8 +117,11 @@ void dijkstra_framework::prepare_gpu_buffers()
 
 void dijkstra_framework::dispose_gpu_buffers()
 {
+    gpu::free_cpu(m_path);
     gpu::free_cpu(m_result);
     gpu::free(d_any_changes);
+    gpu::free(d_updating_pred);
+    gpu::free(d_pred);
     gpu::free(d_updating_cost);
     gpu::free(d_cost);
     gpu::free(d_mask);
@@ -128,15 +140,18 @@ void dijkstra_framework::prepare_cpu_buffers()
     }
 
     m_result = new float[m_graph->vertices.size()];
+    m_path = new int[m_graph->vertices.size()];
 
     std::fill(m_result, m_result + m_graph->vertices.size(), FLT_MAX);
 }
 
 void dijkstra_framework::dispose_cpu_buffers()
 {
+    delete [] m_path;
     delete [] m_result;
 }
 
+// GPU Dijkstra algorithm implementation
 void dijkstra_framework::run_gpu()
 {
     int num_threads         = 512;
@@ -151,8 +166,9 @@ void dijkstra_framework::run_gpu()
     while (any_changes != 0)
     {
         gpu::memset(d_any_changes, 0, sizeof(unsigned int));
-        gpu_shortest_path<<< num_blocks, num_threads >>>(d_vertices, d_edges, d_weights, d_mask, d_cost, d_updating_cost, m_graph->vertices.size(), m_graph->edges.size());
-        gpu_shortest_path2<<< num_blocks, num_threads >>>(d_mask, d_cost, d_updating_cost, d_any_changes, m_graph->vertices.size());
+        gpu_shortest_path<<< num_blocks, num_threads >>>(d_vertices, d_edges, d_weights, d_mask, d_cost, d_updating_cost, d_pred, d_updating_pred, m_graph->vertices.size(), m_graph->edges.size());
+        gpu_shortest_path2<<< num_blocks, num_threads >>>(d_mask, d_cost, d_updating_cost, d_pred, d_updating_pred, d_any_changes, m_graph->vertices.size());
+        
         gpu::memcpy_gpu_to_cpu(&any_changes, d_any_changes, sizeof(unsigned int));
 
         ++cnt;
@@ -163,12 +179,15 @@ void dijkstra_framework::run_gpu()
     /*std::cout << "Number of loop cycles: " << cnt << std::endl;*/
 }
 
+// Reference CPU Dijkstra algorithm implementation
 void dijkstra_framework::run_cpu()
 {
     std::priority_queue<std::pair<float, int>,
                         std::vector< std::pair<float, int> >,
                         std::greater< std::pair<float, int> > > pq;
+
     m_result[m_source] = 0.0f;
+    m_path[m_source] = 0;
     pq.push(std::make_pair(0.0f, m_source));
 
     while (!pq.empty())
@@ -195,6 +214,7 @@ void dijkstra_framework::run_cpu()
                 {
                     m_result[nid] = m_result[top_node] + edge_cost;
                     pq.push(std::make_pair(m_result[nid], nid));
+                    m_path[nid] = top_node;
                 }
             }
         }
@@ -211,6 +231,18 @@ inline float *dijkstra_framework::get_result_gpu()
 inline float *dijkstra_framework::get_result_cpu()
 {
     return m_result;
+}
+
+int *dijkstra_framework::get_result_path_gpu()
+{
+    m_path = (int *)gpu::malloc_cpu(sizeof(float) * m_graph->vertices.size());
+    gpu::memcpy_gpu_to_cpu(m_path, d_pred, sizeof(float) * m_graph->vertices.size());
+    return m_path;
+}
+
+int *dijkstra_framework::get_result_path_cpu()
+{
+    return m_path;
 }
 
 void dijkstra_framework::create_random_graph(int in_vertex_count, int in_neighbour_count)

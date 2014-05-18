@@ -1,15 +1,22 @@
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
 
-__global__ void gpu_init_buffers(size_t source, int *mask, float *cost, float *updating_cost, int size)
+__global__ void gpu_init_buffers(
+    size_t source,
+    int *mask,
+    float *cost,
+    float *updating_cost,
+    int *pred,
+    int *updating_pred,
+    int size)
 {
-    unsigned int tid = threadIdx.x + blockIdx.x * blockDim.x;
+    unsigned int tid = threadIdx.x + (blockIdx.x * blockDim.x);
 
     if (tid < size)
     {
         mask[tid] = 0;
-        cost[tid] = 1764.14f;
-        updating_cost[tid] = 1764.14f;
+        cost[tid] = FLT_MAX;
+        updating_cost[tid] = FLT_MAX;
     }
 
     if (tid == source)
@@ -17,6 +24,8 @@ __global__ void gpu_init_buffers(size_t source, int *mask, float *cost, float *u
         mask[tid] = 1;
         cost[tid] = 0;
         updating_cost[tid] = 0;
+        pred[tid] = tid;
+        updating_pred[tid] = tid;
     }
 }
 
@@ -27,6 +36,8 @@ __global__ void gpu_shortest_path(
     int *mask,
     float *costs,
     float *updating_costs,
+    int *pred,
+    int *updating_pred,
     int vertex_count,
     int edge_count)
 {
@@ -49,6 +60,7 @@ __global__ void gpu_shortest_path(
                 if (updating_costs[nid] > (costs[tid] + weights[i]))
                 {
                     updating_costs[nid] = costs[tid] + weights[i];
+                    updating_pred[nid] = tid;
                 }
             }
         }
@@ -59,6 +71,8 @@ __global__ void gpu_shortest_path2(
     int *mask,
     float *costs,
     float *updating_costs,
+    int *pred,
+    int *updating_pred,
     unsigned int *any_changes,
     int vertex_count)
 {
@@ -69,11 +83,13 @@ __global__ void gpu_shortest_path2(
         if (costs[tid] > updating_costs[tid])
         {
             costs[tid] = updating_costs[tid];
+            pred[tid] = updating_pred[tid];
             mask[tid] = 1;
             any_changes[0]++;
             //atomicInc(&any_changes[0], 1);
         }
 
         updating_costs[tid] = costs[tid];
+        updating_pred[tid] = pred[tid];
     }
 }

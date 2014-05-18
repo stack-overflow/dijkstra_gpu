@@ -15,8 +15,8 @@ struct graph_data
 
     void clear()
     {
-        vertices.clear();
-        edges.clear();
-        weights.clear();
+        std::vector<int>().swap(vertices);
+        std::vector<int>().swap(edges);
+        std::vector<float>().swap(weights);
     }
 };
