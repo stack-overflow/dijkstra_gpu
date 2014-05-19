@@ -13,7 +13,6 @@ namespace sample_data
         "Lausanne"
     };
 
-
     int vertexArray[] =
     {
         0, // "Barcelona(0)",

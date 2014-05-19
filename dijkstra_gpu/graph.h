@@ -7,6 +7,10 @@ struct graph_data
     std::vector<int> edges;
     std::vector<float> weights;
 
+    std::vector< std::pair<int, int> > metric_vertices;
+    int size_x;
+    int size_y;
+
     graph_data(int in_vertex_count, int in_edge_count) :
         vertices(in_vertex_count),
         edges(in_edge_count),
@@ -18,5 +22,7 @@ struct graph_data
         std::vector<int>().swap(vertices);
         std::vector<int>().swap(edges);
         std::vector<float>().swap(weights);
+
+        std::vector< std::pair<int, int> >().swap(metric_vertices);
     }
 };

@@ -27,21 +27,19 @@ public:
         if (result != cudaSuccess) throw std::runtime_error("gpu synchronize failed, error " + std::to_string(result));
     }
 
-    //template<typename T>
     static void memcpy_cpu_to_gpu(void *d_dst, void *h_src, size_t size)
     {
         cudaError_t result = cudaMemcpy(d_dst, h_src, size, cudaMemcpyHostToDevice);
         if (result != cudaSuccess) throw std::runtime_error("memcpy cpu to gpu failed, error " + std::to_string(result));
     }
 
-    //template<typename T>
-    static void memcpy_gpu_to_cpu(void *h_dst, void *d_src, size_t size)
+    static inline void memcpy_gpu_to_cpu(void *h_dst, void *d_src, size_t size)
     {
         cudaError_t result = cudaMemcpy(h_dst, d_src, size, cudaMemcpyDeviceToHost);
         if (result != cudaSuccess) throw std::runtime_error("memcpy gpu to cpu failed, error " + std::to_string(result));
     }
 
-    static void memset(void *d_dst, int value, size_t size)
+    static inline void memset(void *d_dst, int value, size_t size)
     {
         cudaError_t result = cudaMemset(d_dst, value, size);
         if (result != cudaSuccess) throw std::runtime_error("gpu memset failed, error " + std::to_string(result));
