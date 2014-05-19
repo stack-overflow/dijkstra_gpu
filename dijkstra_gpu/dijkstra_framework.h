@@ -24,6 +24,7 @@ class dijkstra_framework
 {
 private:
     std::unique_ptr<graph_data> m_graph;
+    int m_num_threads_per_block;
     int   m_source;
     int   m_destination;
     float *m_result;
@@ -52,6 +53,8 @@ public:
 
     void set_graph(std::unique_ptr<graph_data> in_graph) { m_graph = std::move(in_graph); }
     void set_source(int in_source) { m_source = in_source; }
+    void set_block_size(int in_num_threads_per_block) { m_num_threads_per_block = (in_num_threads_per_block > 1024) ? 1024 : in_num_threads_per_block; }
+
     void clear_graph() { m_graph->clear(); }
 
     void generate_result_image(const char *filename);
@@ -81,7 +84,8 @@ private:
 };
 
 dijkstra_framework::dijkstra_framework() :
-    m_source(0)
+    m_source(0),
+    m_num_threads_per_block(512)
 {
 }
 
@@ -93,7 +97,7 @@ void dijkstra_framework::prepare_gpu()
 {
     prepare_gpu_buffers();
 
-    int num_threads         = 512;
+    int num_threads         = m_num_threads_per_block;
     int overall_threads_num = gpu::get_overall_num_threads(num_threads, m_graph->vertices.size());
     int num_blocks          = overall_threads_num / num_threads;
 
@@ -166,7 +170,7 @@ void dijkstra_framework::dispose_cpu_buffers()
 // GPU Dijkstra algorithm implementation
 void dijkstra_framework::run_gpu()
 {
-    int num_threads         = 512;
+    int num_threads         = m_num_threads_per_block;
     int overall_threads_num = gpu::get_overall_num_threads(num_threads, m_graph->vertices.size());
     int num_blocks          = overall_threads_num / num_threads;
 

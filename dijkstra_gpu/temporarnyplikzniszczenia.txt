@@ -3,7 +3,7 @@
 #include <cstring>
 #include <string>
 
-#include "dijkstra_framework.h"
+#include "huehuehue"
 #include "timekeeper.h"
 #include "runtime_info.h"
 
@@ -12,7 +12,6 @@ int main(int argc, char *argv[])
     int num_vertices = 10000000;
     int num_neighs = 4;
     int num_print_lines = 0;
-    int block_size = 512;
     bool print = false;
 
     if (argc > 1)
@@ -41,23 +40,8 @@ int main(int argc, char *argv[])
                     num_print_lines = std::stoi(argv[++i]);
                 }
             }
-            else if (strcmp(argv[i], "-t") == 0)
-            {
-                if (argc > i + 1)
-                {
-                    block_size = std::stoi(argv[++i]);
-                }
-            }
         }
     }
-
-    std::cout << "vertices: " << num_vertices << "\n";
-    std::cout << "neighbours: " << num_neighs << "\n";
-    std::cout << "threads per block: " << block_size << "\n";
-    std::cout << "print " << num_print_lines << " first results.\n";
-
-    std::cout << "----" << std::endl;
-
     try
     {
         // ------------------
@@ -73,7 +57,6 @@ int main(int argc, char *argv[])
         runtime_info cpu_times;
 
         dijkstra.set_source(0);
-        dijkstra.set_block_size(block_size);
 
         // ---- GPU ----
         std::cout << "GPU will prepare now.\n";
