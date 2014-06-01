@@ -9,11 +9,13 @@
 
 int main(int argc, char *argv[])
 {
-    int num_vertices = 10000000;
-    int num_neighs = 4;
-    int num_print_lines = 0;
+    srand((unsigned int)time(0));
+
+    int num_vertices = 12000000;
+    int num_neighs = 2;
+    int num_print_lines = 12;
     int block_size = 512;
-    bool print = false;
+    size_t num_blocks = gpu::get_overall_num_threads(block_size, num_vertices) / block_size;
 
     if (argc > 1)
     {
@@ -53,6 +55,7 @@ int main(int argc, char *argv[])
 
     std::cout << "vertices: " << num_vertices << "\n";
     std::cout << "neighbours: " << num_neighs << "\n";
+    std::cout << "num blocks: " << num_blocks << "\n";
     std::cout << "threads per block: " << block_size << "\n";
     std::cout << "print " << num_print_lines << " first results.\n";
 
@@ -64,7 +67,7 @@ int main(int argc, char *argv[])
         timekeeper timer;
 
         dijkstra_framework dijkstra;
-       // dijkstra.create_random_graph_metric(8, 2, 800, 800);
+        //dijkstra.create_random_graph_metric(num_vertices, num_neighs, 1000, 1000);
 
         dijkstra.create_random_graph(num_vertices, num_neighs);
         //dijkstra.create_sample_graph();
@@ -73,7 +76,9 @@ int main(int argc, char *argv[])
         runtime_info cpu_times;
 
         dijkstra.set_source(0);
+        dijkstra.set_destination(num_vertices - 1);
         dijkstra.set_block_size(block_size);
+        dijkstra.set_block_number(num_blocks);
 
         // ---- GPU ----
         std::cout << "GPU will prepare now.\n";
@@ -102,6 +107,7 @@ int main(int argc, char *argv[])
         {
             std::cout << path[i] << " ";
         }
+
         std::cout << std::endl;
 
         //dijkstra.generate_result_image("result_map.bmp");

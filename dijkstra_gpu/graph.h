@@ -11,7 +11,7 @@ struct graph_data
     int size_x;
     int size_y;
 
-    graph_data(int in_vertex_count, int in_edge_count) :
+    graph_data(size_t in_vertex_count, size_t in_edge_count) :
         vertices(in_vertex_count),
         edges(in_edge_count),
         weights(in_edge_count)
