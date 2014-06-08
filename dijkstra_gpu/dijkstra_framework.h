@@ -108,6 +108,11 @@ dijkstra_framework::~dijkstra_framework()
 
 void dijkstra_framework::prepare_gpu()
 {
+    if (m_num_blocks * m_block_size > m_graph->vertices.size())
+    {
+        m_num_blocks = gpu::get_overall_num_threads(m_block_size, m_graph->vertices.size()) / m_block_size;
+    }
+
     prepare_gpu_buffers();
 
     *m_any_changes = 1;
@@ -180,6 +185,11 @@ void dijkstra_framework::dispose_cpu_buffers()
 // GPU Dijkstra algorithm implementation
 void dijkstra_framework::run_gpu()
 {
+    if (m_num_blocks * m_block_size > m_graph->vertices.size())
+    {
+        m_num_blocks = gpu::get_overall_num_threads(m_block_size, m_graph->vertices.size()) / m_block_size;
+    }
+
     int cnt = 0;
     
     size_t num_blocks = m_num_blocks;

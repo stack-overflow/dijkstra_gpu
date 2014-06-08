@@ -11,11 +11,13 @@ int main(int argc, char *argv[])
 {
     srand((unsigned int)time(0));
 
-    int num_vertices = 12000000;
+    int num_vertices = 24;
     int num_neighs = 2;
     int num_print_lines = 12;
-    int block_size = 512;
+    int block_size = 12;
     size_t num_blocks = gpu::get_overall_num_threads(block_size, num_vertices) / block_size;
+    bool metric = false;
+
 
     if (argc > 1)
     {
@@ -26,7 +28,8 @@ int main(int argc, char *argv[])
                 if (argc > i + 1)
                 {
                     num_vertices = std::stoi(argv[++i]);
-                    std::cout << num_vertices << std::endl;
+                    num_blocks = gpu::get_overall_num_threads(block_size, num_vertices) / block_size;
+                    std::cout << "TEST" << std::endl;
                 }
             }
             else if (strcmp(argv[i], "-n") == 0)
@@ -43,11 +46,22 @@ int main(int argc, char *argv[])
                     num_print_lines = std::stoi(argv[++i]);
                 }
             }
-            else if (strcmp(argv[i], "-t") == 0)
+            else if (strcmp(argv[i], "--nthreads") == 0)
             {
                 if (argc > i + 1)
                 {
                     block_size = std::stoi(argv[++i]);
+                }
+            }
+            else if (strcmp(argv[i], "--metric") == 0)
+            {
+                metric = true;
+            }
+            else if (strcmp(argv[i], "--nblocks") == 0)
+            {
+                if (argc > i + 1)
+                {
+                    num_blocks = std::stoi(argv[++i]);
                 }
             }
         }
@@ -58,6 +72,7 @@ int main(int argc, char *argv[])
     std::cout << "num blocks: " << num_blocks << "\n";
     std::cout << "threads per block: " << block_size << "\n";
     std::cout << "print " << num_print_lines << " first results.\n";
+    std::cout << "is metric: " << metric << "\n";
 
     std::cout << "----" << std::endl;
 
@@ -67,9 +82,16 @@ int main(int argc, char *argv[])
         timekeeper timer;
 
         dijkstra_framework dijkstra;
-        //dijkstra.create_random_graph_metric(num_vertices, num_neighs, 1000, 1000);
 
-        dijkstra.create_random_graph(num_vertices, num_neighs);
+        if (metric)
+        {
+            dijkstra.create_random_graph_metric(num_vertices, num_neighs, 1000, 1000);
+        }
+        else
+        {
+            dijkstra.create_random_graph(num_vertices, num_neighs);
+        }
+        
         //dijkstra.create_sample_graph();
 
         runtime_info gpu_times;
@@ -110,7 +132,10 @@ int main(int argc, char *argv[])
 
         std::cout << std::endl;
 
-        //dijkstra.generate_result_image("result_map.bmp");
+        if (metric)
+        {
+            dijkstra.generate_result_image("result_map.bmp");
+        }
 
         gpu_times.cleanup_time = timer.measure_time([&] {
             dijkstra.cleanup_gpu();

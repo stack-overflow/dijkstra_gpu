@@ -79,23 +79,6 @@ __global__ void gpu_shortest_path(
     int th_offset = threadIdx.x * elems_per_thread;
     int bl_offset = blockIdx.x * elems_per_block;
 
-#ifdef PRINT_NUM
-    printf ("elems_per_block: %d\n \
-            elems_per_thread: %d\n", elems_per_block, elems_per_thread);
-#endif
-
-    //for (int i = bl_offset + th_offset,
-    //         j = th_offset;
-    //         i < (bl_offset + th_offset + elems_per_thread) &&
-    //         i < vertex_count;
-    //         ++i,
-    //         ++j)
-    //{
-    //    shared_vertices[j] = vertices[i];
-    //}
-    //
-    //__syncthreads();
-
     for (int i = bl_offset + th_offset;
              i < (bl_offset + th_offset + elems_per_thread) &&
              i < vertex_count;
